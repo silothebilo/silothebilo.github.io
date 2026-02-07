@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Shiba RP Battle Dice</title>
+
+<style>
+
+body {
+    font-family: "Times New Roman", Times, serif;
+    text-align: center;
+    margin: 20px;
+    transition: background 0.3s, color 0.3s;
+}
+
+.container {
+    border: 1px solid gray;
+    padding: 15px;
+    margin: 10px auto;
+    width: 70%;
+    border-radius: 10px;
+}
+
+button {
+    padding: 8px;
+    margin: 5px;
+    font-size: 14px;
+}
+
+#result {
+    font-size: 14px;
+    font-weight: normal;
+    margin-top: 20px;
+}
+
+.dark {
+    background-color: #1e1e1e;
+    color: white;
+}
+
+.dark .container {
+    border-color: white;
+}
+
+#easter {
+    margin-top: 50px;
+    font-style: italic;
+    font-size: 12px;
+}
+
+/* absurd scroll area */
+#void {
+    height: 100000px;
+}
+
+</style>
+
+</head>
+
+<body id="page">
+
+<h1>Shiba RP Battle Dice</h1>
+
+<button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+
+<div class="container">
+
+<h3>Your Role</h3>
+<select id="playerRole">
+    <option value="attacker">I am the Attacker</option>
+    <option value="defender">I am the Defender</option>
+</select>
+
+<h3>Strategic Objective</h3>
+<select id="objective">
+    <option>Capture Territory</option>
+    <option>Destroy Enemy Force</option>
+    <option>Defend Position</option>
+    <option>Break Blockade</option>
+    <option>Secure Resources</option>
+    <option>Hold the Line</option>
+</select>
+
+</div>
+
+<div class="container">
+
+<h3>Dice Type</h3>
+<select id="diceSelect">
+    <option value="20" selected>D20</option>
+    <option value="12">D12</option>
+    <option value="10">D10</option>
+</select>
+
+<h3>Forces</h3>
+
+<label>Attacker Units:</label>
+<input type="number" id="attacker" value="100" min="1">
+
+<label>Defender Units:</label>
+<input type="number" id="defender" value="100" min="1">
+
+</div>
+
+<div class="container">
+
+<h3>Battle Type</h3>
+<select id="battleType">
+    <option value="0">Skirmish</option>
+    <option value="2">Border Clash</option>
+    <option value="3">Invasion</option>
+    <option value="1">Siege</option>
+    <option value="1">Naval Engagement</option>
+    <option value="2">Air Superiority Battle</option>
+    <option value="-2">Guerrilla Conflict</option>
+    <option value="-1">Defensive Stand</option>
+</select>
+
+<h3>Terrain</h3>
+<select id="terrain">
+    <option value="0">Plains</option>
+    <option value="-2">Forest</option>
+    <option value="-4">Mountains</option>
+    <option value="-1">Urban</option>
+    <option value="2">Desert</option>
+    <option value="-5">Fortified Position</option>
+</select>
+
+</div>
+
+<button onclick="runBattle()" style="font-size:16px;">
+Simulate Battle
+</button>
+
+<button onclick="copyResult()">
+Copy Report to Clipboard
+</button>
+
+<button onclick="clearHistory()">
+Clear History
+</button>
+
+<h2 id="result">Awaiting orders...</h2>
+
+<div class="container">
+
+<h3>Battle Log:</h3>
+<ul id="history" style="list-style-type: none; padding: 0;"></ul>
+
+</div>
+
+<div id="void"></div>
+
+<script>
+
+function toggleDarkMode() {
+    document.getElementById("page").classList.toggle("dark");
+}
+
+function convertTime(minutes) {
+
+    let inGameMinutes = minutes * 52;
+
+    let inGameHours = Math.round(inGameMinutes / 60);
+    let inGameDays = Math.round(inGameHours / 24);
+
+    return "Battle Duration: " + minutes +
+           " IRL minutes ≈ " + inGameDays +
+           " in-game days (" + inGameHours + " in-game hours).";
+}
+
+function narrative(outcome, attackerLoss, defenderLoss, role, objective, timeText) {
+
+    let objectiveResult = "";
+
+    if (outcome === "Attacker Victory") {
+        objectiveResult = "Objective Achieved: " + objective + ".";
+    }
+    else if (outcome === "Defender Victory") {
+        objectiveResult = "Objective Failed: " + objective + ".";
+    }
+    else {
+        objectiveResult = "Objective Inconclusive: " + objective + ".";
+    }
+
+    let base = "";
+
+    if (outcome === "Attacker Victory") {
+        base = "The attacking forces successfully complete their strategic goal.";
+    }
+    else if (outcome === "Defender Victory") {
+        base = "The defenders prevent the enemy from accomplishing their objective.";
+    }
+    else {
+        base = "The fighting ends without a decisive result for either side.";
+    }
+
+    let perspective = role === "attacker" ?
+        "From your perspective as the attacker, " :
+        "From your perspective as the defender, ";
+
+    return perspective + base + " " + objectiveResult +
+        " Estimated casualties: Attacker lost approximately " + attackerLoss +
+        " units, Defender lost around " + defenderLoss +
+        " units. " + timeText;
+}
+
+function runBattle() {
+
+    let diceSides = parseInt(document.getElementById("diceSelect").value);
+    let attacker = parseInt(document.getElementById("attacker").value);
+    let defender = parseInt(document.getElementById("defender").value);
+
+    let battleMod = parseInt(document.getElementById("battleType").value);
+    let terrainMod = parseInt(document.getElementById("terrain").value);
+
+    let role = document.getElementById("playerRole").value;
+    let objective = document.getElementById("objective").value;
+
+    let roll = Math.floor(Math.random() * diceSides) + 1;
+
+    let powerDiff = attacker - defender;
+
+    let finalScore = roll + powerDiff / 25 + battleMod + terrainMod;
+
+    let outcome = "Draw";
+
+    if (finalScore > 14) outcome = "Attacker Victory";
+    else if (finalScore < 7) outcome = "Defender Victory";
+
+    let attackerLoss = Math.max(1, Math.round(defender * (Math.random() * 0.35)));
+    let defenderLoss = Math.max(1, Math.round(attacker * (Math.random() * 0.35)));
+
+    if (outcome === "Attacker Victory") attackerLoss *= 0.6;
+    if (outcome === "Defender Victory") defenderLoss *= 0.6;
+
+    attackerLoss = Math.round(attackerLoss);
+    defenderLoss = Math.round(defenderLoss);
+
+    let timeMinutes = Math.floor(Math.random() * 180) + 30;
+    let timeText = convertTime(timeMinutes);
+
+    let story = narrative(outcome, attackerLoss, defenderLoss, role, objective, timeText);
+
+    document.getElementById("result").innerText = story;
+
+    let historyList = document.getElementById("history");
+    let newItem = document.createElement("li");
+
+    newItem.innerText =
+        "[Objective: " + objective + "] " +
+        "[A:" + attacker + " vs D:" + defender + "] → " +
+        outcome;
+
+    historyList.prepend(newItem);
+}
+
+function copyResult() {
+    let text = document.getElementById("result").innerText;
+    navigator.clipboard.writeText(text);
+    alert("Battle report copied to clipboard!");
+}
+
+function clearHistory() {
+    document.getElementById("history").innerHTML = "";
+}
+
+</script>
+
+</body>
+</html>
